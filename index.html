@@ -11,7 +11,7 @@
 <body>
 <div class="toolbar"><label>Cliente<select id="client"><option value="">Todos los clientes</option></select></label><label>Mes<select id="month"><option value="">Todos los meses</option></select></label><button id="print" disabled>Imprimir / Guardar PDF</button></div>
 <div id="notice" class="notice">Esperando datos de Grist…</div>
-<main class="paper"><header><div><h1>REDBYTE</h1><p>Reporte de trabajos y horas</p></div><p>BITÁCORA DE SERVICIOS</p></header><section class="meta"><div><strong>Cliente</strong><span id="clientName">—</span><div class="muted" style="margin-top:7px">Tarifa por hora: <span id="hourlyRate">—</span></div></div><div><strong>Período</strong><span id="monthName">—</span></div></section><table><thead><tr><th>Fecha</th><th>Trabajo / descripción</th><th class="num">Horas</th><th class="num">Importe</th></tr></thead><tbody id="rows"><tr><td colspan="4">Sin registros.</td></tr></tbody></table><div class="totals"><div><span>Trabajos</span><span id="count">0</span></div><div><span>Horas</span><span id="hours">0.00</span></div><div class="grand"><span>Importe total</span><span id="amount">0.00</span></div></div><footer>REDBYTE · Reporte generado desde Grist. Importes según tarifas registradas.</footer></main>
+<main class="paper"><header><div><h1>REDBYTE</h1><p>Reporte de trabajos y horas</p></div><p>BITÁCORA DE SERVICIOS</p></header><section class="meta"><div><strong>Cliente</strong><span id="clientName">—</span><div class="muted" style="margin-top:7px">Tarifa por hora: <span id="hourlyRate">—</span></div></div><div><strong>Período</strong><span id="monthName">—</span></div></section><table><thead><tr><th>Fecha</th><th>Trabajo / descripción</th><th class="num">Minutos</th><th class="num">Importe</th></tr></thead><tbody id="rows"><tr><td colspan="4">Sin registros.</td></tr></tbody></table><div class="totals"><div><span>Trabajos</span><span id="count">0</span></div><div><span>Tiempo total</span><span id="duration">0 h 0 min</span></div><div><span>Horas facturables</span><span id="hours">0.00 h</span></div><div class="grand"><span>Importe total</span><span id="amount">0.00</span></div></div><footer>REDBYTE · Reporte generado desde Grist. Importes según tarifas registradas.</footer></main>
 <script>
 (() => {
   const $=id=>document.getElementById(id), client=$('client'), month=$('month');
@@ -20,6 +20,7 @@
   const name=x=>{if(x==null)return '';if(Array.isArray(x))return x.map(name).filter(Boolean).join(', ');if(typeof x==='object')return String(x.Cliente||x.displayValue||x.value||'');return String(x)};
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=x=>num(x).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const minutesOf=r=>r.Minutos!=null?num(r.Minutos):num(r.Horas)*60;
   function clientOf(r){return name(r.Cliente_nombre)||name(r.Cliente)}
   function monthOf(r){if(r.Mes)return String(r.Mes);const d=r.Fecha;return typeof d==='string'?d.slice(0,7):''}
   function refreshSelect(el,values){const old=el.value;el.replaceChildren(new Option(el===client?'Todos los clientes':'Todos los meses',''));values.forEach(v=>el.add(new Option(v,v)));if(values.includes(old))el.value=old;else if(values.length===1)el.value=values[0]}
@@ -27,8 +28,8 @@
     $('clientName').textContent=client.value||'Todos los clientes';$('monthName').textContent=month.value||'Todos los meses';
      const rates=[...new Set(rows.map(r=>num(r['Tarifa hora']??r.Tarifa_hora)))];
      $('hourlyRate').textContent=!rows.length?'—':rates.length===1?'S/ '+money(rates[0]):'Variable según trabajo';
-    $('rows').innerHTML=rows.length?rows.map(r=>`<tr><td>${esc(r.Fecha)}</td><td><strong>${esc(r.Trabajo)}</strong>${r.Descripcion?`<div class="muted">${esc(r.Descripcion)}</div>`:''}</td><td class="num">${money(r.Minutos!=null?num(r.Minutos)/60:r.Horas)}</td><td class="num">${money(r.Importe)}</td></tr>`).join(''):'<tr><td colspan="4">No hay trabajos para esta selección.</td></tr>';
-    $('count').textContent=rows.length;$('hours').textContent=money(rows.reduce((s,r)=>s+(r.Minutos!=null?num(r.Minutos)/60:num(r.Horas)),0));$('amount').textContent=money(rows.reduce((s,r)=>s+num(r.Importe),0));$('print').disabled=!rows.length;
+    $('rows').innerHTML=rows.length?rows.map(r=>`<tr><td>${esc(r.Fecha)}</td><td><strong>${esc(r.Trabajo)}</strong>${r.Descripcion?`<div class="muted">${esc(r.Descripcion)}</div>`:''}</td><td class="num">${money(minutesOf(r)).replace(/,00$/, "")}</td><td class="num">${money(r.Importe)}</td></tr>`).join(''):'<tr><td colspan="4">No hay trabajos para esta selección.</td></tr>';
+    $('count').textContent=rows.length;const totalMinutes=rows.reduce((s,r)=>s+minutesOf(r),0);$('duration').textContent=`${Math.floor(Math.round(totalMinutes)/60)} h ${Math.round(totalMinutes)%60} min`;$('hours').textContent=money(totalMinutes/60)+' h';$('amount').textContent=money(rows.reduce((s,r)=>s+num(r.Importe),0));$('print').disabled=!rows.length;
     $('notice').style.display=all.length?'none':'block';$('notice').textContent=all.length?'':'No se recibieron registros. Comprueba que el widget usa la tabla Trabajos y el permiso Read selected table.';
   }
   client.addEventListener('change',render);month.addEventListener('change',render);$('print').addEventListener('click',()=>window.print());
