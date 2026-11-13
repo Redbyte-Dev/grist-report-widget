@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>REDBYTE · Reportes Grist</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; color: #263238; }
+    .panel { border: 1px solid #ddd; border-radius: 10px; padding: 20px; max-width: 600px; }
+    h1 { font-size: 20px; margin-top: 0; }
+    #status { color: #52616b; }
+    #count { font-size: 30px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>REDBYTE · Reporte de trabajos</h1>
+    <p id="status">Conectando con Grist…</p>
+    <div id="count">—</div>
+    <p>Registros recibidos de la tabla vinculada</p>
+  </div>
+  <script>
+    grist.ready({ requiredAccess: 'read table' });
+    grist.onRecords((records) => {
+      document.getElementById('status').textContent = 'Conexión con Grist establecida';
+      document.getElementById('count').textContent = records.length;
+    });
+  </script>
+</body>
+</html>
